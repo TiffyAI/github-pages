@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TiffyAI Claim</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle, #001f3f, #000814);
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 15px 30px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      background-color: #00ccff;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Claim Your 1.00 TiffyAI</h1>
+  <p>Click below to connect your wallet and receive 1.00 TiffyAI from the deployer.</p>
+  <button onclick="claim()">Claim TiffyAI</button>
+
+  <script>
+    const deployer = "0x79D491031D50cb3bE84229A364F3067f1C146929"; // Your deployer wallet
+    const contractAddress = "0xa1b6b83db3d3ea37f1dfb177208c380e4dee5dd8"; // TiffyAI on testnet
+    const abi = [ // Minimal ABI needed to transfer
+      {
+        "constant": false,
+        "inputs": [
+          { "name": "recipient", "type": "address" },
+          { "name": "amount", "type": "uint256" }
+        ],
+        "name": "transfer",
+        "outputs": [{ "name": "", "type": "bool" }],
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{ "name": "", "type": "uint8" }],
+        "type": "function"
+      }
+    ];
+
+    async function claim() {
+      if (typeof window.ethereum === 'undefined') {
+        alert("Please open in MetaMask browser.");
+        return;
+      }
+
+      try {
+        const web3 = new Web3(window.ethereum);
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await web3.eth.getAccounts();
+        const user = accounts[0];
+
+        if (user.toLowerCase() !== deployer.toLowerCase()) {
+          alert("You must connect as the deployer wallet to send tokens.");
+          return;
+        }
+
+        const contract = new web3.eth.Contract(abi, contractAddress);
+        const decimals = await contract.methods.decimals().call();
+        const amount = web3.utils.toBN(1 * 10 ** decimals); // 1 token
+
+        const recipient = prompt("Enter wallet address to receive 1 TiffyAI:");
+        if (!recipient || recipient.length !== 42 || !recipient.startsWith("0x")) {
+          alert("Invalid address.");
+          return;
+        }
+
+        await contract.methods.transfer(recipient, amount).send({ from: user });
+
+        alert("Success! 1.00 TiffyAI has been sent.");
+      } catch (err) {
+        console.error(err);
+        alert("Transaction failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
